@@ -40,7 +40,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const url = `${SITE_URL}/post/${post.id}`;
 
   // Fall back gracefully when there's no caption.
-  const title = caption || `Post by @${post.username}`;
+  const title = `Post by @${post.username}`;
   const description =
     caption ||
     `A ${firstMedia?.media_type ?? "post"} by @${post.username} on DriveLife.`;
