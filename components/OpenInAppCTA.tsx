@@ -1,14 +1,18 @@
-import { Smartphone } from 'lucide-react';
 import { AppStoreBadges } from '../app/AppStoreBadges';
 import { DriveLifeLogo } from './DriveLifeLogo';
 
 type Props = {
   openInAppHref: string;
-  appStoreHref: string;
-  playStoreHref: string;
+  appStoreHref?: string;
+  playStoreHref?: string;
   headline?: string;
   subline?: string;
 };
+
+const APP_STORE_URL =
+  "https://apps.apple.com/us/app/carcalendar/id1500589187?ls=1";
+const PLAY_STORE_URL =
+  "https://play.google.com/store/apps/details?id=com.app.carcalendar";
 
 export function OpenInAppCTA({
   openInAppHref,
@@ -20,12 +24,12 @@ export function OpenInAppCTA({
   return (
     <section
       aria-label="Open in DriveLife app"
-      className="rounded-2xl border border-neutral-200 bg-white p-5"
+      className="rounded-2xl border border-neutral-200 bg-white p-5 flex flex-col items-center mx-auto text-center"
     >
       <div className="flex items-center justify-between gap-3">
         <DriveLifeLogo />
       </div>
-
+      {/* 
       <h3 className="mt-3 text-base font-semibold text-neutral-900">{headline}</h3>
       <p className="mt-1 text-sm text-neutral-500">{subline}</p>
 
@@ -35,11 +39,14 @@ export function OpenInAppCTA({
       >
         <Smartphone className="h-4 w-4" />
         Open in DriveLife
-      </a>
+      </a> */}
 
-      <p className="mt-4 text-xs font-medium text-neutral-400">Don't have the app?</p>
+      <p className="mt-4 text-xs font-medium text-neutral-400">{subline}</p>
       <div className="mt-2">
-        <AppStoreBadges appStoreHref={appStoreHref} playStoreHref={playStoreHref} />
+        <AppStoreBadges
+          appStoreHref={appStoreHref ?? APP_STORE_URL}
+          playStoreHref={playStoreHref ?? PLAY_STORE_URL}
+        />
       </div>
     </section>
   );

@@ -1,201 +1,125 @@
-import type { Metadata } from 'next';
-import Image from 'next/image';
-import { notFound } from 'next/navigation';
-import { formatDistanceToNow } from 'date-fns';
-import { Heart, MessageCircle, Send, Bookmark, MoreHorizontal } from 'lucide-react';
+import type { Metadata } from "next";
+import Image from "next/image";
 
-import { SiteHeader } from '@/components/SiteHeader';
-import { OpenInAppCTA } from '@/components/OpenInAppCTA';
-import { MobileAppBar } from '@/components/MobileAppBar';
-import { getMockPost, formatCount } from '@/lib/mock';
-
-// ----- Config (move to env when wiring real deeplinks) -----
-const SITE_URL = 'https://drivelife.com';
-const APP_STORE_URL = 'https://apps.apple.com/app/idXXXXXXXXX';
+// ---------- Config ----------
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://drivelife.com";
+const APP_STORE_URL =
+  "https://apps.apple.com/us/app/carcalendar/id1500589187?ls=1";
 const PLAY_STORE_URL =
-  'https://play.google.com/store/apps/details?id=com.drivelife.app';
-const buildDeepLink = (slug: string) => `drivelife://post/${slug}`;
+  "https://play.google.com/store/apps/details?id=com.app.carcalendar";
 
-type Props = {
-  params: Promise<{ slug: string }>;
+const DESCRIPTION =
+  "The home of car culture. Events, builds, meets and the people behind them.";
+
+// ---------- Metadata ----------
+export const metadata: Metadata = {
+  title: "DriveLife — Get the app",
+  description: DESCRIPTION,
+  openGraph: {
+    title: "DriveLife",
+    description: DESCRIPTION,
+    url: SITE_URL,
+    siteName: "DriveLife",
+    images: [
+      {
+        url: `${SITE_URL}/og-image.png`,
+        width: 1200,
+        height: 630,
+        alt: "DriveLife",
+      },
+    ],
+    locale: "en_US",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "DriveLife",
+    description: DESCRIPTION,
+    images: [`${SITE_URL}/og-image.png`],
+  },
 };
 
-// ----- SEO + share-card metadata -----
-export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const { slug } = await params;
-  const post = await getMockPost(slug);
-  if (!post) return {};
-
-  const url = `${SITE_URL}/post/${post.slug}`;
-
-  return {
-    title: post.title,
-    description: post.excerpt,
-    alternates: { canonical: url },
-    openGraph: {
-      type: 'article',
-      url,
-      title: post.title,
-      description: post.excerpt,
-      siteName: 'DriveLife',
-      publishedTime: post.publishedAt,
-      authors: [post.author.name],
-      tags: post.tags,
-      images: [
-        {
-          url: post.coverImage.url,
-          width: post.coverImage.width,
-          height: post.coverImage.height,
-          alt: post.coverImage.alt,
-        },
-      ],
-    },
-    twitter: {
-      card: 'summary_large_image',
-      title: post.title,
-      description: post.excerpt,
-      images: [post.coverImage.url],
-    },
-    // App-link metadata so iMessage / FB / Twitter / etc. can "Open in App".
-    other: {
-      'al:ios:url': buildDeepLink(post.slug),
-      'al:ios:app_store_id': 'XXXXXXXXX',
-      'al:ios:app_name': 'DriveLife',
-      'al:android:url': buildDeepLink(post.slug),
-      'al:android:package': 'com.drivelife.app',
-      'al:android:app_name': 'DriveLife',
-      'al:web:url': url,
-    },
-  };
-}
-
-// ----- Page -----
-export default async function PostPage({ params }: Props) {
-  const { slug } = await params;
-  const post = await getMockPost(slug);
-  if (!post) notFound();
-
-  const deepLink = buildDeepLink(post.slug);
-  const publishedDate = new Date(post.publishedAt);
-  const timeAgo = formatDistanceToNow(publishedDate, { addSuffix: false });
-
+// ---------- Page ----------
+export default function Page() {
   return (
-    <>
-      <SiteHeader openInAppHref={deepLink} />
+    <main className="flex min-h-screen flex-col bg-black text-white">
+      {/* Centered hero — logo + store buttons */}
+      <div className="flex flex-1 flex-col items-center justify-center px-6 py-16">
+        <Image
+          src="/download-splash1.jpg"
+          alt="DriveLife"
+          width={2529}
+          height={289}
+          priority
+          className="h-auto w-full"
+        />
 
-      <main className="mx-auto max-w-[600px] pb-24 sm:pb-12">
-        <article>
-          {/* Author bar */}
-          <header className="flex items-center justify-between px-4 py-3">
-            <div className="flex min-w-0 items-center gap-3">
-              <div className="relative h-9 w-9 shrink-0 overflow-hidden rounded-full ring-1 ring-neutral-200">
-                <Image
-                  src={post.author.avatarUrl}
-                  alt={post.author.name}
-                  fill
-                  sizes="36px"
-                  className="object-cover"
-                />
-              </div>
-              <div className="min-w-0 leading-tight">
-                <p className="truncate text-sm font-semibold text-neutral-900">
-                  {post.author.handle}
-                </p>
-                <p className="truncate text-xs text-neutral-500">
-                  <time dateTime={post.publishedAt}>{timeAgo} ago</time>
-                  {post.location && (
-                    <>
-                      <span className="mx-1">·</span>
-                      <span>{post.location}</span>
-                    </>
-                  )}
-                </p>
-              </div>
-            </div>
-            <button
-              type="button"
-              aria-label="More options"
-              className="rounded-full p-1.5 text-neutral-700 transition hover:bg-neutral-100"
+        <div className="mt-12 flex w-full flex-col gap-3">
+          <a
+            href={APP_STORE_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label="Download on the App Store"
+            className="group flex items-center justify-center gap-3 rounded-xl border border-neutral-700 bg-black px-5 py-3 transition hover:border-neutral-500 hover:bg-neutral-900"
+          >
+            <svg
+              viewBox="0 0 24 24"
+              className="h-7 w-7 fill-white"
+              aria-hidden="true"
             >
-              <MoreHorizontal className="h-5 w-5" />
-            </button>
-          </header>
+              <path d="M17.05 12.46c-.03-2.84 2.32-4.2 2.42-4.27-1.32-1.93-3.38-2.2-4.11-2.22-1.74-.18-3.4 1.03-4.28 1.03-.9 0-2.25-1.01-3.71-.98-1.9.03-3.66 1.11-4.64 2.81-2 3.46-.51 8.58 1.43 11.39.95 1.37 2.07 2.91 3.54 2.86 1.43-.06 1.97-.92 3.69-.92 1.72 0 2.21.92 3.71.89 1.53-.03 2.5-1.4 3.43-2.78 1.08-1.6 1.52-3.14 1.55-3.22-.03-.01-2.96-1.14-2.99-4.59zM14.27 4.07c.78-.94 1.31-2.25 1.16-3.55-1.13.05-2.5.75-3.31 1.69-.72.83-1.36 2.17-1.19 3.45 1.27.1 2.56-.64 3.34-1.59z" />
+            </svg>
+            <span className="flex flex-col leading-tight">
+              <span className="text-[10px] text-neutral-300">
+                Download on the
+              </span>
+              <span className="text-lg font-semibold tracking-tight text-white">
+                App Store
+              </span>
+            </span>
+          </a>
 
-          {/* Photo */}
-          <figure className="relative w-full bg-neutral-100">
-            <div className="relative aspect-[4/5] w-full sm:aspect-[16/10]">
-              <Image
-                src={post.coverImage.url}
-                alt={post.coverImage.alt}
-                fill
-                priority
-                sizes="(min-width: 640px) 600px, 100vw"
-                className="object-cover"
+          <a
+            href={PLAY_STORE_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label="Get it on Google Play"
+            className="group flex items-center justify-center gap-3 rounded-xl border border-neutral-700 bg-black px-5 py-3 transition hover:border-neutral-500 hover:bg-neutral-900"
+          >
+            <svg viewBox="0 0 24 24" className="h-7 w-7" aria-hidden="true">
+              <path
+                d="M3.6 1.7C3.2 2 3 2.5 3 3.2v17.6c0 .7.2 1.2.6 1.5l.1.1L13.5 13l-9.8-11.3z"
+                fill="#34A853"
               />
-            </div>
-          </figure>
+              <path
+                d="M17 16.5l-3.5-3.5 3.5-3.5 4.1 2.3c1.2.7 1.2 1.8 0 2.5L17 16.5z"
+                fill="#FBBC04"
+              />
+              <path
+                d="M13.5 13l3.5 3.5-13.4 7.6c-.4-.1-.8-.4-.9-.8l10.8-10.3z"
+                fill="#EA4335"
+              />
+              <path
+                d="M13.5 13L2.7 2.7c.1-.5.5-.7.9-.8L17 9.5 13.5 13z"
+                fill="#4285F4"
+              />
+            </svg>
+            <span className="flex flex-col leading-tight">
+              <span className="text-[10px] uppercase tracking-wider text-neutral-300">
+                Get it on
+              </span>
+              <span className="text-lg font-semibold tracking-tight text-white">
+                Google Play
+              </span>
+            </span>
+          </a>
+        </div>
+      </div>
 
-          {/* Engagement bar */}
-          <div className="flex items-center justify-between px-4 pt-3">
-            <div className="flex items-center gap-3 text-neutral-900">
-              <button type="button" aria-label="Like" className="transition hover:text-heart">
-                <Heart className="h-6 w-6" strokeWidth={1.75} />
-              </button>
-              <button type="button" aria-label="Comment" className="transition hover:opacity-60">
-                <MessageCircle className="h-6 w-6" strokeWidth={1.75} />
-              </button>
-              <button type="button" aria-label="Share" className="transition hover:opacity-60">
-                <Send className="h-6 w-6" strokeWidth={1.75} />
-              </button>
-            </div>
-            <button type="button" aria-label="Save" className="transition hover:opacity-60">
-              <Bookmark className="h-6 w-6" strokeWidth={1.75} />
-            </button>
-          </div>
-
-          {/* Like count */}
-          <p className="px-4 pt-2 text-sm font-semibold text-neutral-900">
-            {formatCount(post.stats.likes)} likes
-          </p>
-
-          {/* Caption — username inline, then text */}
-          <div className="px-4 pt-1">
-            <p className="text-sm leading-relaxed text-neutral-900">
-              <span className="font-semibold">{post.author.handle}</span>{' '}
-              <span className="text-neutral-800">{post.excerpt}</span>
-            </p>
-          </div>
-
-          {/* View comments link — opens in app */}
-          {post.stats.comments > 0 && (
-            <a
-              href={deepLink}
-              className="mt-1 block px-4 text-sm text-neutral-500 hover:text-neutral-700"
-            >
-              View all {formatCount(post.stats.comments)} comments
-            </a>
-          )}
-
-          {/* Open-in-app card */}
-          <div className="mt-6 px-4">
-            <OpenInAppCTA
-              openInAppHref={deepLink}
-              appStoreHref={APP_STORE_URL}
-              playStoreHref={PLAY_STORE_URL}
-              subline={`Like, comment, and follow @${post.author.handle} in DriveLife.`}
-            />
-          </div>
-
-          {/* Footer */}
-          <footer className="mt-12 px-4 text-center">
-            <p className="text-xs text-neutral-400">
-              © {new Date().getFullYear()} DriveLife
-            </p>
-          </footer>
-        </article>
-      </main>
-
-      <MobileAppBar openInAppHref={deepLink} />
-    </>
+      {/* Footer pinned to the bottom */}
+      <footer className="pb-8 text-center text-xs text-neutral-500">
+        © {new Date().getFullYear()} DriveLife
+      </footer>
+    </main>
   );
 }

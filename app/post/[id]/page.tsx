@@ -16,14 +16,10 @@ import {
 
 import { SiteHeader } from "@/components/SiteHeader";
 import { OpenInAppCTA } from "@/components/OpenInAppCTA";
-import { MobileAppBar } from "@/components/MobileAppBar";
 import { getPostById, parseServerDate, formatCount, asNumber } from "@/lib/api";
 
 // ----- Config -----
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
-const APP_STORE_URL = "https://apps.apple.com/app/idXXXXXXXXX";
-const PLAY_STORE_URL =
-  "https://play.google.com/store/apps/details?id=com.drivelife.app";
 
 const buildDeepLink = (id: string) => `drivelife://post/${id}`;
 
@@ -32,7 +28,6 @@ type Props = {
 };
 
 // ---------- SEO + share-card metadata ----------
-
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { id } = await params;
   const post = await getPostById(id);
@@ -286,8 +281,6 @@ export default async function PostPage({ params }: Props) {
           <div className="mt-6 px-4">
             <OpenInAppCTA
               openInAppHref={deepLink}
-              appStoreHref={APP_STORE_URL}
-              playStoreHref={PLAY_STORE_URL}
               subline={`Like, comment, and follow @${post.username} in DriveLife.`}
             />
           </div>
@@ -300,8 +293,6 @@ export default async function PostPage({ params }: Props) {
           </footer>
         </article>
       </main>
-
-      <MobileAppBar openInAppHref={deepLink} />
     </>
   );
 }

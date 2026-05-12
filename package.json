@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "start": "next start",
+    "start": "next start -p 3006",
     "lint": "eslint",
     "cloudways:restart": "pm2 restart dl-app-staging-app",
     "cloudways:stop": "pm2 stop dl-app-staging-app",

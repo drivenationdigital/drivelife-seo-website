@@ -18,7 +18,7 @@ export const metadata: Metadata = {
   description:
     "The home of car culture. Events, builds, meets and the people behind them.",
   applicationName: "DriveLife",
-  icons: { icon: "/favicon.ico" },
+  icons: { icon: "/favicon.png" },
 };
 
 export const viewport: Viewport = {
