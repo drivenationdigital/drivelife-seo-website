@@ -42,7 +42,7 @@ export async function GET(
   const linked = await getLinkedEntity(code);
 
   if (linked?.linked_to) {
-    return NextResponse.redirect(new URL(`/user/${linked.linked_to}`, baseUrl));
+    return NextResponse.redirect(new URL(`/profile/${linked.linked_to}`, baseUrl));
   }
 
   // Not linked (or lookup failed) — drop them on the landing page so
