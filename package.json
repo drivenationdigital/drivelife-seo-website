@@ -5,14 +5,14 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "start": "next start -p 3006",
+    "start": "next start",
     "lint": "eslint",
-    "cloudways:restart": "pm2 restart dl-app-staging-app",
-    "cloudways:stop": "pm2 stop dl-app-staging-app",
-    "cloudways:logs": "pm2 logs dl-app-staging-app",
-    "cloudways:reload": "pm2 reload dl-app-staging-app --update-env",
+    "cloudways:restart": "pm2 restart dl-app-app",
+    "cloudways:stop": "pm2 stop dl-app-app",
+    "cloudways:logs": "pm2 logs dl-app-app",
+    "cloudways:reload": "pm2 reload dl-app-app --update-env",
     "cloudways:deploy": "npm run build && npm run cloudways:reload",
-    "pm2:create": "pm2 start npm --name dl-app-staging-app -- start"
+    "pm2:create": "pm2 start npm --name dl-app-app -- start"
   },
   "dependencies": {
     "next": "16.2.6",
