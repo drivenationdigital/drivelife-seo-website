@@ -11,6 +11,15 @@ const nextConfig = {
       { protocol: 'https', hostname: 'secure.gravatar.com' },
     ],
   },
+  async redirects() {
+    return [
+      {
+        source: '/user/:username',
+        destination: '/profile/:username',
+        permanent: true,
+      },
+    ];
+  }
 };
 
 export default nextConfig;

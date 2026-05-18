@@ -29,7 +29,7 @@ export async function GET(
   // Decide which origin to redirect against.
   const host = (request.headers.get("host") ?? "").toLowerCase();
   const fromQrSubdomain = host.startsWith("qr.");
-  const canonicalUrl = process.env.NEXT_PUBLIC_SITE_URL;
+  const canonicalUrl = "https://app.mydrivelife.com";
   const baseUrl =
     fromQrSubdomain && canonicalUrl
       ? canonicalUrl
