@@ -27,13 +27,13 @@ export async function GET(
   const { code } = await params;
 
   // Decide which origin to redirect against.
-  const host = (request.headers.get("host") ?? "").toLowerCase();
-  const fromQrSubdomain = host.startsWith("qr.");
-  const canonicalUrl = "https://app.mydrivelife.com";
-  const baseUrl =
-    fromQrSubdomain && canonicalUrl
-      ? canonicalUrl
-      : new URL(request.url).origin;
+  // const host = (request.headers.get("host") ?? "").toLowerCase();
+  // const fromQrSubdomain = host.startsWith("qr.");
+  const baseUrl = "https://app.mydrivelife.com";
+  // const baseUrl =
+  //   fromQrSubdomain && canonicalUrl
+  //     ? canonicalUrl
+  //     : new URL(request.url).origin;
 
   if (!code) {
     return NextResponse.redirect(new URL("/", baseUrl));
