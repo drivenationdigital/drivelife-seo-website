@@ -495,6 +495,50 @@ export async function getUserPosts(
 }
 
 // =====================================================================
+// QR codes
+// =====================================================================
+ 
+export type ApiLinkedEntity = {
+  linked_to: string | number;
+};
+ 
+/**
+ * Resolve a physical QR code to the entity it's linked to. POST endpoint —
+ * always uncached because QR-to-entity bindings can change at any moment
+ * (users re-link plates, transfer ownership, etc.).
+ *
+ * Returns null on HTTP failure, error responses, or when the code isn't
+ * linked to anything. The caller treats `null` as "send them to the landing".
+ */
+export async function getLinkedEntity(
+  qrCode: string,
+): Promise<ApiLinkedEntity | null> {
+  try {
+    const res = await fetch(`${API_V1}/get-linked-entity`, {
+      method: 'POST',
+      cache: 'no-store',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ qr_code: qrCode }),
+    });
+    if (!res.ok) {
+      console.error(`[getLinkedEntity] HTTP ${res.status} for qr=${qrCode}`);
+      return null;
+    }
+    const json = await res.json();
+    if (json?.status === 'error' || json?.error) {
+      console.error('[getLinkedEntity] error response:', json?.message ?? json?.error);
+      return null;
+    }
+    const linkedTo = json?.data?.linked_to;
+    if (linkedTo == null) return null;
+    return { linked_to: linkedTo };
+  } catch (err) {
+    console.error('[getLinkedEntity] fetch error:', err);
+    return null;
+  }
+}
+
+// =====================================================================
 // Shared helpers
 // =====================================================================
 
