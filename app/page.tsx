@@ -43,14 +43,19 @@ export const metadata: Metadata = {
 export default function Page() {
   return (
     <main className="flex min-h-screen flex-col bg-black text-white">
-      {/* Centered hero — logo + store buttons */}
-      <div className="flex flex-1 flex-col items-center justify-center px-6 py-16">
+      {/* Centered hero — logo + store buttons.
+          Capped rather than free: the wordmark is 2529px wide and `w-full`
+          with nothing above it meant the full monitor, so on a desktop the
+          logo was the whole screen. The cap holds the buttons to a sensible
+          column at the same time. */}
+      <div className="mx-auto flex w-full max-w-md flex-1 flex-col items-center justify-center px-6 py-16">
         <Image
           src="/download-splash1.jpg"
           alt="DriveLife"
           width={2529}
           height={289}
           priority
+          sizes="(min-width: 448px) 400px, 100vw"
           className="h-auto w-full"
         />
 

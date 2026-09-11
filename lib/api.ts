@@ -343,6 +343,194 @@ export async function getVenueById(
   }
 }
 
+// =====================================================================
+// Galleries
+// =====================================================================
+
+export type ApiGalleryTag =
+  | {
+      type: "user";
+      id: number;
+      username: string;
+      name: string | null;
+      image: string | null;
+      href: string;
+    }
+  | {
+      type: "vehicle";
+      id: number;
+      name: string;
+      image: string | null;
+      owner: {
+        user_id: number;
+        username: string;
+        name: string;
+        avatar: string | null;
+      } | null;
+      href: string;
+    };
+
+export type ApiGalleryPhoto = {
+  id: number;
+  /** The photo the owner chose to lead with, as the app shows it. */
+  is_cover?: boolean;
+  url: string;
+  thumb: string;
+  taken_at: string | null;
+  created_at: string | null;
+  tags: ApiGalleryTag[];
+};
+
+export type ApiGallery = {
+  id: number;
+  title: string;
+  country: string | null;
+  created_at: string | null;
+  photo_count: number;
+  owner: {
+    user_id: number;
+    username: string;
+    display_name: string;
+    avatar: string | null;
+  } | null;
+};
+
+export type ApiGalleryResponse = {
+  gallery: ApiGallery;
+  tags: ApiGalleryTag[];
+  photos: ApiGalleryPhoto[];
+  total: number;
+  page: number;
+  per_page: number;
+  total_pages: number;
+};
+
+// The public read endpoint, which is deliberately not the one the app uses:
+// it answers the same for everybody, carries only approved tags, and never
+// includes a registration.
+export async function getGalleryById(
+  id: string,
+  page = 1,
+): Promise<ApiGalleryResponse | null> {
+  try {
+    const params = new URLSearchParams({
+      gallery_id: id,
+      page: String(page),
+      per_page: "60",
+    });
+    const url = `${API_V2}/public/gallery?${params.toString()}`;
+    const res = await fetch(url, {
+      headers: { "Content-Type": "application/json" },
+      next: { revalidate: 300 },
+    });
+    if (!res.ok) {
+      // 404 is an ordinary answer here — a deleted or private gallery — so it
+      // is not worth a console error on every crawl.
+      if (res.status !== 404) {
+        console.error(`[getGalleryById] HTTP ${res.status} for id=${id}`);
+      }
+      return null;
+    }
+    const body = (await res.json()) as
+      | (ApiGalleryResponse & { success: true })
+      | { success: false };
+
+    if (!body || typeof body !== "object" || !("gallery" in body)) {
+      return null;
+    }
+    return body as ApiGalleryResponse;
+  } catch (err) {
+    console.error("[getGalleryById] fetch error:", err);
+    return null;
+  }
+}
+
+/** The flag for a two-letter country code, or "" when it is not one. */
+export function countryFlag(code: string | null | undefined): string {
+  const iso = (code ?? "").trim().toUpperCase();
+  if (iso.length !== 2) return "";
+
+  const first = iso.codePointAt(0)!;
+  const second = iso.codePointAt(1)!;
+  const A = 65;
+  const Z = 90;
+  if (first < A || first > Z || second < A || second > Z) return "";
+
+  const BASE = 0x1f1e6;
+  return String.fromCodePoint(BASE + first - A, BASE + second - A);
+}
+
+// =====================================================================
+// Vehicles
+// =====================================================================
+
+export type ApiVehicleOwner = {
+  name?: string | null;
+  username?: string | null;
+  first_name?: string | null;
+  last_name?: string | null;
+  profile_image?: string | null;
+  user_verified?: boolean;
+};
+
+// Deliberately narrower than what the endpoint returns.
+//
+// /get-garage is unauthenticated and responds with SELECT * — including the
+// vehicle's REGISTRATION. That is a plate lookup for anyone who can count, and
+// the app has just been through a round of work to keep registrations away
+// from people who are not the owner. It is not typed here so it cannot be
+// rendered here by accident.
+export type ApiVehicle = {
+  id: string | number;
+  owner_id?: string | number;
+  make?: string | null;
+  model?: string | null;
+  year?: string | number | null;
+  colour?: string | null;
+  cover_photo?: string | null;
+  description?: string | null;
+  vehicle_bhp?: number;
+  vehicle_062?: number;
+  vehicle_top_speed?: number;
+  mods_count?: number;
+  status?: string;
+  owner?: ApiVehicleOwner | null;
+};
+
+export async function getVehicleById(id: string): Promise<ApiVehicle | null> {
+  try {
+    const params = new URLSearchParams({ garage_id: id });
+    const url = `${API_V2}/get-garage?${params.toString()}`;
+    const res = await fetch(url, {
+      headers: { "Content-Type": "application/json" },
+      next: { revalidate: 60 },
+    });
+    if (!res.ok) {
+      console.error(`[getVehicleById] HTTP ${res.status} for id=${id}`);
+      return null;
+    }
+    const vehicle = (await res.json()) as ApiVehicle | { success: false };
+    // The endpoint answers 200 with {success:false} for a missing or inactive
+    // vehicle rather than a 404, so the body is what decides.
+    if (!vehicle || typeof vehicle !== "object" || !("id" in vehicle)) {
+      return null;
+    }
+    return vehicle as ApiVehicle;
+  } catch (err) {
+    console.error("[getVehicleById] fetch error:", err);
+    return null;
+  }
+}
+
+/** "2019 Porsche 911", skipping whatever is missing. */
+export function vehicleTitle(vehicle: ApiVehicle): string {
+  const parts = [vehicle.year, vehicle.make, vehicle.model]
+    .map((p) => (p === null || p === undefined ? "" : String(p).trim()))
+    .filter((p) => p.length > 0);
+
+  return parts.length > 0 ? parts.join(" ") : "Vehicle";
+}
+
 export function formatVenueEventStart(startDate: string): string | null {
   if (!startDate || typeof startDate !== "string") return null;
   const d = new Date(startDate.replace(" ", "T") + "Z");
