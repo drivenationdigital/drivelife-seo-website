@@ -408,15 +408,15 @@ export type ApiGalleryResponse = {
 // The public read endpoint, which is deliberately not the one the app uses:
 // it answers the same for everybody, carries only approved tags, and never
 // includes a registration.
-export async function getGalleryById(
+async function fetchGalleryPage(
   id: string,
-  page = 1,
+  page: number,
 ): Promise<ApiGalleryResponse | null> {
   try {
     const params = new URLSearchParams({
       gallery_id: id,
       page: String(page),
-      per_page: "60",
+      per_page: String(GALLERY_PAGE_SIZE),
     });
     const url = `${API_V2}/public/gallery?${params.toString()}`;
     const res = await fetch(url, {
@@ -427,7 +427,7 @@ export async function getGalleryById(
       // 404 is an ordinary answer here — a deleted or private gallery — so it
       // is not worth a console error on every crawl.
       if (res.status !== 404) {
-        console.error(`[getGalleryById] HTTP ${res.status} for id=${id}`);
+        console.error(`[getGalleryById] HTTP ${res.status} for id=${id} page=${page}`);
       }
       return null;
     }
@@ -445,6 +445,54 @@ export async function getGalleryById(
   }
 }
 
+/** The endpoint's own ceiling per request. */
+const GALLERY_PAGE_SIZE = 60;
+
+/**
+ * Pages fetched at most — 1,200 photos. A backstop against a runaway count,
+ * well above any gallery the app can produce.
+ */
+const GALLERY_MAX_PAGES = 20;
+
+/**
+ * A gallery with EVERY photo, not just the first page.
+ *
+ * The endpoint caps a request at 60, and this used to ask for page one only,
+ * so a large gallery silently stopped at 60. The remaining pages are fetched
+ * together rather than one after another, so a 200-photo gallery costs about
+ * what two requests do.
+ */
+export async function getGalleryById(
+  id: string,
+): Promise<ApiGalleryResponse | null> {
+  const first = await fetchGalleryPage(id, 1);
+  if (!first) return null;
+
+  const pages = Math.min(first.total_pages || 1, GALLERY_MAX_PAGES);
+  if (pages <= 1) return first;
+
+  const rest = await Promise.all(
+    Array.from({ length: pages - 1 }, (_, i) => fetchGalleryPage(id, i + 2)),
+  );
+
+  // Gallery-wide tags and the gallery itself are the same on every page, so
+  // only the photos are merged. A page that failed is skipped rather than
+  // failing the whole gallery.
+  const seen = new Set(first.photos.map((p) => p.id));
+  const photos = [...first.photos];
+
+  for (const page of rest) {
+    for (const photo of page?.photos ?? []) {
+      if (!seen.has(photo.id)) {
+        seen.add(photo.id);
+        photos.push(photo);
+      }
+    }
+  }
+
+  return { ...first, photos, page: 1, per_page: photos.length, total_pages: 1 };
+}
+
 /** The flag for a two-letter country code, or "" when it is not one. */
 export function countryFlag(code: string | null | undefined): string {
   const iso = (code ?? "").trim().toUpperCase();
@@ -458,6 +506,63 @@ export function countryFlag(code: string | null | undefined): string {
 
   const BASE = 0x1f1e6;
   return String.fromCodePoint(BASE + first - A, BASE + second - A);
+}
+
+// =====================================================================
+// Media
+// =====================================================================
+
+// Cloudflare Stream: customer-<code>.cloudflarestream.com/<id>/... and the
+// older videodelivery.net/<id>/... Both put the video id first in the path.
+const STREAM_URL =
+  /^(https:\/\/(?:customer-[a-z0-9]+\.cloudflarestream\.com|videodelivery\.net))\/([a-f0-9]{32})/i;
+
+/**
+ * Something an <Image> can actually show for a piece of media.
+ *
+ * For a video the API's media_url is the HLS manifest —
+ * .../manifest/video.m3u8 — which is a playlist, not a picture. Handed to an
+ * <Image> it is a broken image, which is what every video post looked like.
+ * Stream serves a still for every video at /thumbnails/thumbnail.jpg; this
+ * swaps one for the other.
+ *
+ * Null for a video we cannot find an id in, so the caller shows a placeholder
+ * rather than trying to render a manifest. Anything else passes through.
+ */
+export function mediaThumb(
+  url: string | null | undefined,
+  mediaType?: string | null,
+): string | null {
+  if (!url) return null;
+
+  const stream = url.match(STREAM_URL);
+  if (stream) return `${stream[1]}/${stream[2]}/thumbnails/thumbnail.jpg`;
+
+  if (mediaType === "video") return null;
+
+  return url;
+}
+
+/**
+ * Cloudflare Stream's own player for a video, or null if it is not one.
+ *
+ * A video's media_url is an HLS manifest. Safari plays that in a plain
+ * <video>, Chrome and Firefox do not — and handed to <Image>, as the post page
+ * used to, it is not a picture at all and next/image refuses it outright.
+ * Stream's hosted player handles HLS everywhere, sizes itself, and adapts
+ * quality to the connection, so the page does not need a player of its own.
+ */
+export function streamEmbed(url: string | null | undefined): string | null {
+  if (!url) return null;
+
+  const stream = url.match(STREAM_URL);
+  if (!stream) return null;
+
+  const [, base, id] = stream;
+  const poster = encodeURIComponent(`${base}/${id}/thumbnails/thumbnail.jpg`);
+
+  // preload=metadata: the page loads, the video does not until it is played.
+  return `${base}/${id}/iframe?poster=${poster}&preload=metadata`;
 }
 
 // =====================================================================

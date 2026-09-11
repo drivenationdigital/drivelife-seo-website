@@ -16,7 +16,14 @@ import {
 
 import { SiteHeader } from "@/components/SiteHeader";
 import { OpenInAppCTA } from "@/components/OpenInAppCTA";
-import { getPostById, parseServerDate, formatCount, asNumber } from "@/lib/api";
+import {
+  getPostById,
+  parseServerDate,
+  formatCount,
+  asNumber,
+  mediaThumb,
+  streamEmbed,
+} from "@/lib/api";
 
 // ----- Config -----
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
@@ -39,6 +46,10 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const caption = post.caption?.trim();
   const url = `${SITE_URL}/post/${post.id}`;
 
+  // A video's media_url is its stream manifest, which a link preview cannot
+  // show either — so a shared video post previewed as a blank card.
+  const shareImage = mediaThumb(firstMedia?.media_url, firstMedia?.media_type);
+
   // Fall back gracefully when there's no caption.
   const title = `Post by @${post.username}`;
   const description =
@@ -57,10 +68,10 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       siteName: "DriveLife",
       publishedTime: parseServerDate(post.post_date).toISOString(),
       authors: [post.username],
-      images: firstMedia
+      images: shareImage && firstMedia
         ? [
             {
-              url: firstMedia.media_url,
+              url: shareImage,
               width: asNumber(firstMedia.media_width, 1200),
               height: asNumber(firstMedia.media_height, 1200),
               alt: firstMedia.media_alt || `Post by @${post.username}`,
@@ -72,7 +83,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       card: "summary_large_image",
       title,
       description,
-      images: firstMedia ? [firstMedia.media_url] : [],
+      images: shareImage ? [shareImage] : [],
     },
     // App-link metadata — lets iMessage/FB/etc. offer "Open in DriveLife".
     other: {
@@ -101,6 +112,11 @@ export default async function PostPage({ params }: Props) {
   const caption = post.caption?.trim();
   const location = post.location?.trim();
   const isVideo = firstMedia?.media_type === "video";
+
+  // Videos play in Stream's own player; see streamEmbed. A video whose URL
+  // yields no id falls back to its still, then to nothing.
+  const embed = isVideo ? streamEmbed(firstMedia?.media_url) : null;
+  const still = mediaThumb(firstMedia?.media_url, firstMedia?.media_type);
 
   // Image aspect ratio — fall back to portrait if missing.
   const w = asNumber(firstMedia?.media_width, 4);
@@ -173,19 +189,36 @@ export default async function PostPage({ params }: Props) {
               className="relative w-full overflow-hidden bg-neutral-100"
               style={{ aspectRatio }}
             >
-              <Image
-                src={firstMedia.media_url}
-                alt={firstMedia.media_alt || `Post by @${post.username}`}
-                fill
-                priority
-                sizes="(min-width: 640px) 600px, 100vw"
-                className="object-cover"
-                placeholder={firstMedia.blurred_url ? "blur" : "empty"}
-                blurDataURL={firstMedia.blurred_url || undefined}
-              />
+              {embed ? (
+                <iframe
+                  src={embed}
+                  title={firstMedia.media_alt || `Video by @${post.username}`}
+                  loading="lazy"
+                  allow="accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture;"
+                  allowFullScreen
+                  className="absolute inset-0 h-full w-full border-0"
+                />
+              ) : (
+                still && (
+                  <Image
+                    src={still}
+                    alt={firstMedia.media_alt || `Post by @${post.username}`}
+                    fill
+                    priority
+                    sizes="(min-width: 640px) 600px, 100vw"
+                    className="object-cover"
+                    placeholder={
+                      !isVideo && firstMedia.blurred_url ? "blur" : "empty"
+                    }
+                    blurDataURL={
+                      (!isVideo && firstMedia.blurred_url) || undefined
+                    }
+                  />
+                )
+              )}
 
-              {/* Video indicator */}
-              {isVideo && (
+              {/* Only when there is no player: the player has its own. */}
+              {isVideo && !embed && (
                 <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
                   <div className="rounded-full bg-black/55 p-4 backdrop-blur-sm">
                     <Play className="h-7 w-7 fill-white text-white" />

@@ -7,7 +7,12 @@ import type { LucideIcon } from "lucide-react";
 
 import { SiteHeader } from "@/components/SiteHeader";
 import { OpenInAppCTA } from "@/components/OpenInAppCTA";
-import { getVehicleById, vehicleTitle, htmlToPlainText } from "@/lib/api";
+import {
+  getVehicleById,
+  vehicleTitle,
+  htmlToPlainText,
+  mediaThumb,
+} from "@/lib/api";
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
 
@@ -34,7 +39,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const title = vehicleTitle(vehicle);
   const owner = vehicle.owner?.username;
   const url = `${SITE_URL}/vehicle/${vehicle.id}`;
-  const cover = vehicle.cover_photo ?? undefined;
+  const cover = mediaThumb(vehicle.cover_photo) ?? undefined;
 
   const plainDesc = vehicle.description
     ? htmlToPlainText(vehicle.description)
@@ -89,7 +94,9 @@ export default async function VehiclePage({ params }: Props) {
   const title = vehicleTitle(vehicle);
   const deepLink = buildDeepLink(vehicle.id);
   const owner = vehicle.owner;
-  const cover = vehicle.cover_photo;
+  // Through mediaThumb because a cover the API passes through untouched can
+  // be a video URL, and a manifest is not an image.
+  const cover = mediaThumb(vehicle.cover_photo);
 
   // Only the figures that were actually filled in. A spec sheet of zeroes
   // says the car has no power rather than that nobody typed a number.

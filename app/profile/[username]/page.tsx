@@ -18,6 +18,7 @@ import {
   getUserProfile,
   getUserPosts,
   extractImageUrl,
+  mediaThumb,
   asNumber,
   formatCount,
   type ApiUser,
@@ -311,15 +312,21 @@ export default async function UserProfilePage({ params }: Props) {
               {posts.map((post) => {
                 const firstMedia = post.media[0];
                 const isVideo = firstMedia?.media_type === "video";
+                // A video's media_url is its HLS manifest, which is not an
+                // image. This is its Stream still instead.
+                const thumb = mediaThumb(
+                  firstMedia?.media_url,
+                  firstMedia?.media_type,
+                );
                 return (
                   <Link
                     key={post.id}
                     href={`/post/${post.id}`}
                     className="relative aspect-square overflow-hidden bg-neutral-100"
                   >
-                    {firstMedia?.media_url && (
+                    {thumb && (
                       <Image
-                        src={firstMedia.media_url}
+                        src={thumb}
                         alt={post.caption || ""}
                         fill
                         sizes="(min-width: 640px) 200px, 33vw"
