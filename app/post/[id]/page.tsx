@@ -28,7 +28,11 @@ import {
 // ----- Config -----
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
 
-const buildDeepLink = (id: string) => `drivelife://post/${id}`;
+// The query form, deliberately: the app reads these parameters before it
+// looks at the path, so this works on builds whose path handling is older
+// or broken. See dl-* in deeplinks_helper.dart.
+const buildDeepLink = (id: string) =>
+  `drivelife://app/?dl-postv=${id}`;
 
 type Props = {
   params: Promise<{ id: string }>;

@@ -27,7 +27,7 @@ import {
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
 
 const buildDeepLink = (handle: string | number) =>
-  `drivelife://user/${encodeURIComponent(String(handle))}`;
+  `drivelife://app/?dl-profile=${encodeURIComponent(String(handle))}`;
 
 type SocialPlatform = "instagram" | "facebook" | "tiktok" | "youtube";
 
